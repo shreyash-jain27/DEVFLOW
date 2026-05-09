@@ -101,11 +101,11 @@ const helmetOptions = {
   contentSecurityPolicy: {
     directives: {
       defaultSrc:     ["'self'"],
-      scriptSrc:      ["'self'"],
-      styleSrc:       ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      imgSrc:         ["'self'", "data:", "https://*"],
-      connectSrc:     ["'self'"],
-      fontSrc:        ["'self'", "https://fonts.gstatic.com"],
+      scriptSrc:      ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdnjs.cloudflare.com"],
+      styleSrc:       ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
+      imgSrc:         ["'self'", "data:", "https://*", "http://*"],
+      connectSrc:     ["'self'", "https://*", "http://*"],
+      fontSrc:        ["'self'", "https://fonts.gstatic.com", "https://fonts.googleapis.com"],
       objectSrc:      ["'none'"],
       mediaSrc:       ["'self'"],
       frameSrc:       ["'none'"],

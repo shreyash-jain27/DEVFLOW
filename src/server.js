@@ -123,6 +123,7 @@ if (process.env.NODE_ENV !== 'test') {
 
 
 app.get('/', (req, res) => {
+  logger.info(`[Root] Serving landing page to ${req.ip}`);
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
