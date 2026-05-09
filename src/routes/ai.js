@@ -1,22 +1,31 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
+const auth = require('../middlewares/auth');
 const {
   generateSubtasks,
   analyzeCode,
   suggestPriority,
   parseMeetingNotes
 } = require('../controllers/aiController');
+const { getJobStatus } = require('../controllers/jobController');
 
-// All AI routes require authentication
+const validate = require('../middlewares/validate');
+const { meetingNotesSchema, codeAnalysisSchema } = require('../validators/ai.validator');
+
+
 router.use(auth);
 
-// Task-specific AI operations
-router.post('/tasks/:taskId/generate-subtasks', generateSubtasks);
-router.post('/tasks/:taskId/suggest-priority', suggestPriority);
 
-// Standalone AI operations
-router.post('/code/analyze', analyzeCode);
-router.post('/meeting-notes/parse', parseMeetingNotes);
+
+router.get('/jobs/:jobId', getJobStatus);
+
+
+router.post('/tasks/:taskId/generate-subtasks', generateSubtasks);
+router.post('/tasks/:taskId/suggest-priority',  suggestPriority);
+
+
+router.post('/code/analyze',        validate(codeAnalysisSchema),   analyzeCode);
+router.post('/meeting-notes/parse', validate(meetingNotesSchema),   parseMeetingNotes);
 
 module.exports = router;
+

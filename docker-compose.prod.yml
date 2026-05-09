@@ -1,0 +1,125 @@
+# docker-compose.prod.yml — PRODUCTION
+#
+# Key differences from the dev compose:
+#   - Builds the "production" Dockerfile stage (no devDeps, no nodemon)
+#   - No bind-mounts (source is baked into the image)
+#   - No Mongo Express (admin UI is a security risk in prod)
+#   - Resource limits (memory + CPU) to prevent runaway containers
+#   - All services use restart: unless-stopped for auto-recovery
+#   - Logs limited via logging driver (prevents unbounded disk growth)
+#
+# Usage:
+#   docker-compose -f docker-compose.prod.yml up -d --build
+#   docker-compose -f docker-compose.prod.yml down
+
+version: "3.9"
+
+volumes:
+  mongo_data_prod:
+  redis_data_prod:
+
+networks:
+  devflow_prod_net:
+    driver: bridge
+
+services:
+
+  # ── MongoDB (production) ──────────────────────────────────────────────────────
+  mongo:
+    image: mongo:7
+    container_name: devflow_mongo_prod
+    restart: unless-stopped
+    networks: [devflow_prod_net]
+    volumes:
+      - mongo_data_prod:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASS}
+    # No external port exposure in prod — only app can reach it via the internal network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── Redis (production) ────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: devflow_redis_prod
+    restart: unless-stopped
+    networks: [devflow_prod_net]
+    volumes:
+      - redis_data_prod:/data
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes --save 60 1
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.25"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # ── Application (production) ──────────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # Use the lean "production" stage — no devDeps, no nodemon
+      target: production
+    container_name: devflow_app_prod
+    restart: unless-stopped
+    networks: [devflow_prod_net]
+    # In prod, pass secrets via environment (set in your CI/CD pipeline or .env.prod)
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASS}@mongo:27017/devflow?authSource=admin
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+    ports:
+      # Expose app port to the host (or to a reverse proxy like nginx)
+      - "5000:5000"
+    # No volume bind-mounts — code is baked into the image layer
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          # Adjust these based on your VPS/instance size
+          memory: 512M
+          cpus: "1.0"
+      # Run 2 replicas in swarm mode (ignored in plain compose, ready for scale-up)
+      replicas: 1
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"

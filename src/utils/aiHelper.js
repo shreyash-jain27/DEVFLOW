@@ -1,6 +1,6 @@
-/**
- * A private helper function to manage the fetch request and safely extract JSON from Gemini's response.
- */
+const logger = require('./logger');
+
+
 async function callGeminiAndParseJSON(systemPrompt, userPrompt) {
   try {
     const API_KEY = process.env.GEMINI_API_KEY;
@@ -20,7 +20,7 @@ async function callGeminiAndParseJSON(systemPrompt, userPrompt) {
           { parts: [{ text: userPrompt }] }
         ],
         generationConfig: {
-          // Gemini has a built-in feature to force pure JSON output!
+          
           responseMimeType: "application/json"
         }
       })
@@ -33,21 +33,19 @@ async function callGeminiAndParseJSON(systemPrompt, userPrompt) {
 
     const data = await response.json();
     
-    // Extract the text content from the Gemini response structure
+    
     const textContent = data.candidates[0].content.parts[0].text;
     
-    // Because we set responseMimeType to application/json, we don't need regex. 
-    // Gemini guarantees the output is a valid JSON string.
+    
+    
     return JSON.parse(textContent);
   } catch (error) {
-    console.error('AI Helper Error:', error.message);
+    logger.error('AI Helper Error:', { error: error.message });
     throw new Error('Failed to process AI request. Make sure your Gemini API key is correct.');
   }
 }
 
-/**
- * 1. Generates subtasks from a main task description
- */
+
 async function generateSubtasks(taskDescription) {
   const systemPrompt = `You are a helpful task breakdown assistant. 
   You must ALWAYS respond with ONLY a raw JSON array of objects. 
@@ -58,9 +56,7 @@ async function generateSubtasks(taskDescription) {
   return await callGeminiAndParseJSON(systemPrompt, userPrompt);
 }
 
-/**
- * 2. Analyzes code and returns quality scores and suggestions
- */
+
 async function analyzeCode(code, language) {
   const systemPrompt = `You are an expert strict code reviewer. 
   You must ALWAYS respond with ONLY a raw JSON object. 
@@ -71,9 +67,7 @@ async function analyzeCode(code, language) {
   return await callGeminiAndParseJSON(systemPrompt, userPrompt);
 }
 
-/**
- * 3. Suggests priority based on task and project context
- */
+
 async function suggestPriority(title, description, projectContext) {
   const systemPrompt = `You are an expert agile project manager. 
   You must ALWAYS respond with ONLY a raw JSON object. 
@@ -84,9 +78,7 @@ async function suggestPriority(title, description, projectContext) {
   return await callGeminiAndParseJSON(systemPrompt, userPrompt);
 }
 
-/**
- * 4. Parses unstructured meeting notes to extract action items
- */
+
 async function parseMeetingNotes(notes) {
   const systemPrompt = `You are a sharp assistant that extracts action items from meeting transcripts. 
   You must ALWAYS respond with ONLY a raw JSON array of objects. 

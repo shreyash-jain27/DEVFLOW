@@ -1,7 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { check } = require('express-validator');
-const auth = require('../middleware/auth');
+const auth = require('../middlewares/auth');
+const authorize = require('../middlewares/authorize');
+const validate = require('../middlewares/validate');
+const { taskAttachments, handleUpload } = require('../middlewares/upload');
+const cacheMiddleware = require('../middlewares/cacheMiddleware');
+const { generateKey, hashQuery } = require('../utils/cache');
+const { createTaskSchema, updateTaskSchema } = require('../validators/task.validator');
 const {
   createTask,
   getAllTasks,
@@ -9,28 +14,48 @@ const {
   updateTask,
   deleteTask
 } = require('../controllers/taskController');
+const {
+  uploadAttachments,
+  getAttachments,
+  deleteAttachment,
+} = require('../controllers/attachmentController');
 
-// All task routes require authentication (this applies the middleware to all routes below)
+
 router.use(auth);
 
-// @route   POST /api/tasks
-// @route   GET /api/tasks
+
+
 router.route('/')
   .post(
-    [
-      // Validation middleware for creating a task
-      check('title', 'Title is required').not().isEmpty(),
-    ],
+    validate(createTaskSchema),
+    authorize('admin', 'member'),
     createTask
   )
-  .get(getAllTasks);
+  .get(
+    cacheMiddleware((req) => generateKey('tasks', req.user.id, hashQuery(req.query)), 120), 
+    getAllTasks
+  );
 
-// @route   GET /api/tasks/:id
-// @route   PUT /api/tasks/:id
-// @route   DELETE /api/tasks/:id
+
+
+
 router.route('/:id')
-  .get(getTaskById)
-  .put(updateTask)
-  .delete(deleteTask);
+  .get(
+    cacheMiddleware((req) => generateKey('task', req.params.id), 300), 
+    getTaskById
+  )
+  .put(validate(updateTaskSchema), authorize('admin', 'member'), updateTask)
+  .delete(authorize('admin', 'member'), deleteTask);
+
+
+
+
+router.route('/:id/attachments')
+  .post(handleUpload(taskAttachments), authorize('admin', 'member'), uploadAttachments)
+  .get(authorize('admin', 'member', 'viewer'), getAttachments);
+
+
+router.delete('/:id/attachments/:attachmentId', authorize('admin', 'member'), deleteAttachment);
 
 module.exports = router;
+

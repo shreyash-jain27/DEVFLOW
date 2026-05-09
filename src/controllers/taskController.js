@@ -1,11 +1,13 @@
 const Task = require('../models/Task');
 const { validationResult } = require('express-validator');
+const { del, delByPattern, generateKey } = require('../utils/cache');
+const { audit } = require('../services/audit.service');
 
-// @desc    Create a new task
-// @route   POST /api/tasks
-// @access  Private
-const createTask = async (req, res) => {
-  // Check for validation errors from express-validator
+
+
+
+const createTask = async (req, res, next) => {
+  
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
@@ -14,7 +16,7 @@ const createTask = async (req, res) => {
   try {
     const { title, description, status, priority, assignedTo, project, dueDate, tags } = req.body;
 
-    // Create the task in the database
+    
     const task = await Task.create({
       title,
       description,
@@ -24,34 +26,36 @@ const createTask = async (req, res) => {
       project,
       dueDate,
       tags,
-      createdBy: req.user._id // Automatically assigned from the auth middleware
+      createdBy: req.user._id 
     });
 
-    // Emit real-time event to all connected clients
+    
     const io = req.app.get('io');
     io.emit('task:created', task);
 
+    await delByPattern(generateKey('tasks', req.user.id.toString(), '*'));
+    audit(req, 'CREATE', 'Task', task._id);
+
     res.status(201).json(task);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error while creating task' });
+    next(error);
   }
 };
 
-// @desc    Get all tasks (with optional filtering)
-// @route   GET /api/tasks
-// @access  Private
-const getAllTasks = async (req, res) => {
+
+
+
+const getAllTasks = async (req, res, next) => {
   try {
     const { project, status, priority } = req.query;
     
-    // Build a dynamic query object based on provided filters
+    
     let query = {};
     if (project) query.project = project;
     if (status) query.status = status;
     if (priority) query.priority = priority;
 
-    // Find tasks and populate the referenced fields with actual data
+    
     const tasks = await Task.find(query)
       .populate('assignedTo', 'name email')
       .populate('project', 'name')
@@ -59,15 +63,14 @@ const getAllTasks = async (req, res) => {
 
     res.status(200).json(tasks);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error while fetching tasks' });
+    next(error);
   }
 };
 
-// @desc    Get a single task by ID
-// @route   GET /api/tasks/:id
-// @access  Private
-const getTaskById = async (req, res) => {
+
+
+
+const getTaskById = async (req, res, next) => {
   try {
     const task = await Task.findById(req.params.id)
       .populate('assignedTo', 'name email')
@@ -80,15 +83,14 @@ const getTaskById = async (req, res) => {
 
     res.status(200).json(task);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error while fetching task' });
+    next(error);
   }
 };
 
-// @desc    Update a task
-// @route   PUT /api/tasks/:id
-// @access  Private
-const updateTask = async (req, res) => {
+
+
+
+const updateTask = async (req, res, next) => {
   try {
     let task = await Task.findById(req.params.id);
 
@@ -96,30 +98,35 @@ const updateTask = async (req, res) => {
       return res.status(404).json({ message: 'Task not found' });
     }
 
-    // Update the task. { new: true } returns the updated document, runValidators ensures enum checks pass
+    
     task = await Task.findByIdAndUpdate(
       req.params.id,
       { $set: req.body },
       { new: true, runValidators: true }
     );
 
-    // Emit real-time event if status was updated
+    
     if (req.body.status) {
       const io = req.app.get('io');
       io.emit('task:updated', task);
     }
 
+    await Promise.all([
+      del(generateKey('task', req.params.id)),
+      delByPattern(generateKey('tasks', req.user.id.toString(), '*')),
+    ]);
+    audit(req, 'UPDATE', 'Task', task._id);
+
     res.status(200).json(task);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error while updating task' });
+    next(error);
   }
 };
 
-// @desc    Delete a task
-// @route   DELETE /api/tasks/:id
-// @access  Private
-const deleteTask = async (req, res) => {
+
+
+
+const deleteTask = async (req, res, next) => {
   try {
     const task = await Task.findById(req.params.id);
 
@@ -129,10 +136,15 @@ const deleteTask = async (req, res) => {
 
     await Task.findByIdAndDelete(req.params.id);
 
+    await Promise.all([
+      del(generateKey('task', req.params.id)),
+      delByPattern(generateKey('tasks', req.user.id.toString(), '*')),
+    ]);
+    audit(req, 'DELETE', 'Task', req.params.id);
+
     res.status(200).json({ message: 'Task removed successfully' });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error while deleting task' });
+    next(error);
   }
 };
 

@@ -23,18 +23,32 @@ const projectSchema = new mongoose.Schema({
   endDate: {
     type: Date,
   },
-  createdBy: {
+  owner: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
   },
+  members: [
+    {
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+      },
+      role: {
+        type: String,
+        enum: ['admin', 'member', 'viewer'],
+        default: 'member',
+      },
+    },
+  ],
 }, {
-  timestamps: true, // Automatically manages createdAt and updatedAt fields
+  timestamps: true, 
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
 
-// Virtual populate for tasks
+
 projectSchema.virtual('tasks', {
   ref: 'Task',
   localField: '_id',

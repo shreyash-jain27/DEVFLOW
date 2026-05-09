@@ -1,35 +1,38 @@
 const express = require('express');
-const dotenv = require('dotenv');
-const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
+const env = require('./config/env');
+const logger = require('./utils/logger');
+const { applySecurityMiddleware } = require('./middlewares/security');
+const requestId = require('./middlewares/requestId');
 
-// Load environment variables
-dotenv.config();
+if (process.env.NODE_ENV !== 'test') {
+  const connectDB = require('./config/db');
+  connectDB();
+  
+  const bootstrapJobs = require('./jobs/index');
+  bootstrapJobs();
+}
 
-// Connect to database
-const connectDB = require('./config/db');
-connectDB();
 
-// Initialize Express app
 const app = express();
 const server = http.createServer(app);
 
-// Initialize Socket.io
+
 const io = new Server(server, {
   cors: {
-    origin: '*', // Configure this to your frontend URL in production
+    origin: '*', 
     methods: ['GET', 'POST']
   }
 });
 
-// Make io instance accessible in all controllers via req.app.get('io')
+
 app.set('io', io);
 
-// Socket.io Authentication Middleware
+
 const jwt = require('jsonwebtoken');
 io.use((socket, next) => {
-  // Extract token from handshake auth payload (e.g. client connects with { auth: { token: '...' } })
+  
   const token = socket.handshake.auth?.token;
   if (!token) {
     return next(new Error('Socket authentication error: Token missing'));
@@ -37,49 +40,108 @@ io.use((socket, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    socket.user = decoded; // Attach decoded user info to the socket connection
+    socket.user = decoded; 
     next();
   } catch (err) {
     return next(new Error('Socket authentication error: Invalid token'));
   }
 });
 
-// Basic Middleware
-app.use(cors());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
 
-// Rate Limiting
-const { apiLimiter, aiLimiter } = require('./middleware/rateLimiter');
+
+
+applySecurityMiddleware(app);
+
+
+app.use(requestId);
+
+
+const { apiLimiter, aiLimiter, authLimiter } = require('./middlewares/rateLimiter');
 app.use('/api/', apiLimiter);
 app.use('/api/ai/', aiLimiter);
 
-// Routes
+
+
+app.use('/api/health', require('./routes/health'));
+
+app.use('/api/auth/login',    authLimiter);
+app.use('/api/auth/register', authLimiter);
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/tasks', require('./routes/tasks'));
 app.use('/api/projects', require('./routes/projects'));
 app.use('/api/ai', require('./routes/ai'));
+app.use('/api/users', require('./routes/users'));
+app.use('/api/admin', require('./routes/admin'));
 
-// Basic Route
+
+
+if (process.env.NODE_ENV !== 'test') {
+  const { createBullBoard } = require('@bull-board/api');
+  const { BullAdapter }     = require('@bull-board/api/bullAdapter');
+  const { ExpressAdapter }  = require('@bull-board/express');
+  const { aiQueue, emailQueue, cleanupQueue } = require('./config/queues');
+
+  const serverAdapter = new ExpressAdapter();
+  serverAdapter.setBasePath('/admin/queues');
+
+  createBullBoard({
+    queues: [
+      new BullAdapter(aiQueue),
+      new BullAdapter(emailQueue),
+      new BullAdapter(cleanupQueue),
+    ],
+    serverAdapter,
+  });
+
+  
+  const jwt = require('jsonwebtoken');
+  const User = require('./models/User');
+  const bullBoardGuard = async (req, res, next) => {
+    try {
+      const token = req.headers.authorization?.split(' ')[1];
+      if (!token) return res.status(401).json({ message: 'Token required' });
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await User.findById(decoded.id).select('role');
+      if (!user || user.role !== 'admin') return res.status(403).json({ message: 'Admin only' });
+      next();
+    } catch {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+  };
+
+  app.use('/admin/queues', bullBoardGuard, serverAdapter.getRouter());
+  logger.info('[Bull Board] Mounted at /admin/queues');
+}
+
+
 app.get('/', (req, res) => {
   res.json({ message: 'AI-Enhanced Task Management API is running...' });
 });
 
-// Global Error Handler
-const { globalErrorHandler } = require('./utils/errorHandler');
+
+const { globalErrorHandler } = require('./middlewares/error');
 app.use(globalErrorHandler);
 
-// Socket.io connection handling
+
 io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
+  logger.info(`A user connected: ${socket.id}`);
   
   socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
+    logger.info(`User disconnected: ${socket.id}`);
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = env.port;
 
-server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  server.listen(PORT, () => {
+    logger.info(`Server is running on port ${PORT}`);
+  });
+}
+
+module.exports = app;

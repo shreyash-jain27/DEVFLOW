@@ -1,0 +1,129 @@
+# docker-compose.yml — LOCAL DEVELOPMENT
+#
+# Starts the full DEVFLOW stack with:
+#   - Hot-reload via nodemon (src/ is bind-mounted)
+#   - Mongo Express web UI for database inspection
+#   - Persistent named volumes for Mongo + Redis data
+#   - Healthchecks on Mongo + Redis so the app waits until they're truly ready
+#
+# Usage:
+#   docker-compose up --build         # first run
+#   docker-compose up                 # subsequent runs (no rebuild)
+#   docker-compose down -v            # stop and delete volumes
+
+version: "3.9"
+
+# ─── Named volumes ────────────────────────────────────────────────────────────
+# Data persists between container restarts. Remove with `docker-compose down -v`.
+volumes:
+  mongo_data:
+  redis_data:
+
+# ─── Network ──────────────────────────────────────────────────────────────────
+# All services share one bridge network so they can reach each other by
+# service name (e.g. app → mongodb://mongo:27017).
+networks:
+  devflow_net:
+    driver: bridge
+
+# ─── Services ─────────────────────────────────────────────────────────────────
+services:
+
+  # ── MongoDB ─────────────────────────────────────────────────────────────────
+  mongo:
+    image: mongo:7
+    container_name: devflow_mongo
+    restart: unless-stopped
+    networks: [devflow_net]
+    volumes:
+      # Named volume keeps data when the container is recreated
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASS:-devflowpass}
+    ports:
+      # Expose to host so you can connect via Compass or mongosh locally
+      - "27017:27017"
+    healthcheck:
+      # mongosh ping — succeeds only when MongoDB is accepting connections
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s  # give Mongo time to initialise on first run
+
+  # ── Redis ────────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: devflow_redis
+    restart: unless-stopped
+    networks: [devflow_net]
+    volumes:
+      - redis_data:/data
+    # requirepass adds AUTH to Redis — use REDIS_PASSWORD from .env
+    command: redis-server --requirepass ${REDIS_PASSWORD:-devflowredis} --appendonly yes
+    ports:
+      - "6379:6379"
+    healthcheck:
+      # redis-cli ping returns PONG when healthy; AUTH is required
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-devflowredis}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  # ── Application ──────────────────────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # Build the "builder" stage (has devDependencies incl. nodemon)
+      target: builder
+    container_name: devflow_app
+    restart: unless-stopped
+    networks: [devflow_net]
+    env_file: .env          # loads all vars from your local .env file
+    environment:
+      NODE_ENV: development
+      # Override MONGODB_URI + REDIS_URL to point at the compose service names
+      MONGODB_URI: mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASS:-devflowpass}@mongo:27017/devflow?authSource=admin
+      REDIS_URL: redis://:${REDIS_PASSWORD:-devflowredis}@redis:6379
+    ports:
+      - "5000:5000"
+    volumes:
+      # Bind-mount src → hot reload: editing files on your machine is instantly
+      # reflected inside the container without rebuilding the image.
+      - ./src:/app/src:ro
+    depends_on:
+      mongo:
+        condition: service_healthy   # wait for Mongo healthcheck to pass
+      redis:
+        condition: service_healthy   # wait for Redis healthcheck to pass
+    # Use nodemon in dev so the server restarts on file changes
+    command: ["node_modules/.bin/nodemon", "--watch", "src", "src/server.js"]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # ── Mongo Express (dev only) ──────────────────────────────────────────────────
+  # A lightweight browser-based MongoDB admin UI. NOT included in prod compose.
+  mongo-express:
+    image: mongo-express:latest
+    container_name: devflow_mongo_express
+    restart: unless-stopped
+    networks: [devflow_net]
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_ROOT_USER:-admin}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_ROOT_PASS:-devflowpass}
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASS:-devflowpass}@mongo:27017/
+      # Set a basic auth password for the web UI itself
+      ME_CONFIG_BASICAUTH_USERNAME: ${ME_USERNAME:-admin}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${ME_PASSWORD:-admin123}
+    depends_on:
+      mongo:
+        condition: service_healthy

@@ -1,5 +1,8 @@
 # 🤖 AI-Enhanced Task Management Backend
 
+> [!IMPORTANT]
+> **View the [Complete Project Walkthrough](../COMPLETE_WALKTHROUGH.md)** for a full overview of the ecosystem, features, and setup instructions.
+
 An intelligent, production-ready RESTful API built with Node.js and Express. This backend powers a robust task management system, supercharged with Large Language Model (LLM) capabilities via Gemini's API. It features secure JWT authentication, real-time Socket.io updates, strict rate limiting, and a clean MVC architecture.
 
 ---

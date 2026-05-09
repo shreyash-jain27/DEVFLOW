@@ -1,0 +1,38 @@
+# .dockerignore — controls what gets sent to the Docker build daemon (build context).
+# Smaller context = faster builds + no secrets leaked into image layers.
+
+# ── Dependencies ──────────────────────────────────────────────────────────────
+# Never copy host node_modules — the Dockerfile installs them fresh inside the image.
+node_modules/
+npm-debug.log*
+
+# ── Environment / Secrets ─────────────────────────────────────────────────────
+# .env must NEVER be baked into an image layer — pass via docker-compose env_file
+# or Docker secrets at runtime.
+.env
+.env.*
+
+# ── Version Control ───────────────────────────────────────────────────────────
+.git/
+.gitignore
+
+# ── Logs & Runtime Output ─────────────────────────────────────────────────────
+logs/
+*.log
+coverage/
+
+# ── Tests ─────────────────────────────────────────────────────────────────────
+# Test files add ~100MB (mongodb-memory-server binary). Keep them out of prod.
+src/tests/
+
+# ── Documentation ─────────────────────────────────────────────────────────────
+*.md
+LICENSE
+
+# ── OS artifacts ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Docker compose files (not needed inside the image itself) ─────────────────
+docker-compose*.yml
+Dockerfile*
