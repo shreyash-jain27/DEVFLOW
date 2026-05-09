@@ -14,6 +14,8 @@ if (process.env.NODE_ENV !== 'test') {
   bootstrapJobs();
 }
 
+const path = require('path');
+
 
 const app = express();
 const server = http.createServer(app);
@@ -59,6 +61,7 @@ applySecurityMiddleware(app);
 
 
 app.use(requestId);
+app.use(express.static(path.join(__dirname, 'public')));
 
 
 const { apiLimiter, aiLimiter, authLimiter } = require('./middlewares/rateLimiter');
@@ -120,7 +123,7 @@ if (process.env.NODE_ENV !== 'test') {
 
 
 app.get('/', (req, res) => {
-  res.json({ message: 'AI-Enhanced Task Management API is running...' });
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 
