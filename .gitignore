@@ -3,3 +3,5 @@ node_modules/
 BACKEND_MASTERCLASS.md
 ER_DIAGRAM.md
 PROJECT_LEARNING_GUIDE.md
+coverage/
+logs/
