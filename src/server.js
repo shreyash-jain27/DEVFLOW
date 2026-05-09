@@ -1,5 +1,6 @@
 const express = require('express');
 const http = require('http');
+const path = require('path');
 const { Server } = require('socket.io');
 const env = require('./config/env');
 const logger = require('./utils/logger');
@@ -13,8 +14,6 @@ if (process.env.NODE_ENV !== 'test') {
   const bootstrapJobs = require('./jobs/index');
   bootstrapJobs();
 }
-
-const path = require('path');
 
 
 const app = express();
@@ -123,7 +122,6 @@ if (process.env.NODE_ENV !== 'test') {
 
 
 app.get('/', (req, res) => {
-  logger.info(`[Root] Serving landing page to ${req.ip}`);
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
