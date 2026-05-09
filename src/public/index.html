@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DevFlow API | AI-Powered Task Management</title>
+    <title>DevFlow API | Technical Showcase</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
@@ -12,21 +12,15 @@
         :root {
             --primary: #6366f1;
             --secondary: #a855f7;
-            --accent: #ec4899;
             --background: #0f172a;
             --surface: #1e293b;
             --text: #f8fafc;
             --text-muted: #94a3b8;
             --success: #10b981;
-            --warning: #f59e0b;
-            --nav-bg: rgba(30, 41, 59, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
@@ -34,45 +28,36 @@
             color: var(--text);
             line-height: 1.6;
             overflow-x: hidden;
-            min-height: 100vh;
         }
 
         .gradient-bg {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1;
             background: 
-                radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 100% 100%, rgba(168, 85, 247, 0.15) 0%, transparent 50%);
+                radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.12) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(168, 85, 247, 0.12) 0%, transparent 50%);
         }
 
-        /* --- CardNav CSS (Vanilla Re-implementation) --- */
+        /* --- CardNav RE-ENGINEERED --- */
         .card-nav-container {
             position: fixed;
-            top: 2rem;
+            top: 1.5rem;
             left: 50%;
             transform: translateX(-50%);
             width: 90%;
             max-width: 800px;
-            z-index: 100;
+            z-index: 1000;
         }
 
         .card-nav {
-            height: 60px;
-            background: var(--nav-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 1.25rem;
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
             overflow: hidden;
-            position: relative;
-            transition: height 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        .card-nav.open {
-            height: 320px;
+            height: 60px; /* Base height */
+            transition: border-color 0.3s;
         }
 
         .card-nav-top {
@@ -80,293 +65,141 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 1.25rem;
+            padding: 0 1.5rem;
+            position: relative;
+            z-index: 10;
         }
 
-        .hamburger-menu {
-            width: 30px;
-            height: 20px;
+        .hamburger {
+            width: 32px;
+            height: 32px;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            justify-content: center;
+            gap: 6px;
             cursor: pointer;
+            z-index: 20;
         }
 
-        .hamburger-line {
+        .hamburger span {
+            display: block;
             width: 100%;
             height: 2px;
             background: var(--text);
-            transition: 0.3s;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .open .hamburger-line:nth-child(1) { transform: translateY(9px) rotate(45deg); }
-        .open .hamburger-line:nth-child(2) { opacity: 0; }
-        .open .hamburger-line:nth-child(3) { transform: translateY(-9px) rotate(-45deg); }
+        .hamburger.open span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+        .hamburger.open span:nth-child(2) { opacity: 0; }
+        .hamburger.open span:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
 
-        .nav-logo {
-            font-weight: 800;
-            font-size: 1.25rem;
-            background: linear-gradient(to right, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .nav-cta {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 0.75rem;
-            font-weight: 600;
-            font-size: 0.875rem;
-            cursor: pointer;
-        }
+        .logo { font-weight: 800; font-size: 1.25rem; letter-spacing: -1px; }
 
         .card-nav-content {
+            padding: 0.75rem;
             display: flex;
-            gap: 1rem;
-            padding: 1rem;
+            gap: 0.75rem;
             height: 240px;
             opacity: 0;
-            transform: translateY(20px);
-            transition: 0.4s;
-            pointer-events: none;
-        }
-
-        .open .card-nav-content {
-            opacity: 1;
-            transform: translateY(0);
-            pointer-events: auto;
+            visibility: hidden;
         }
 
         .nav-card {
             flex: 1;
-            border-radius: 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
             padding: 1.25rem;
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            justify-content: space-between;
         }
 
-        .nav-card-label {
-            font-weight: 800;
-            font-size: 1rem;
-            margin-bottom: 0.5rem;
-            color: var(--primary);
-        }
-
-        .nav-card-links {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .nav-card-link {
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 0.875rem;
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
-
-        .nav-card-link:hover {
-            color: var(--text);
-            transform: translateX(4px);
-        }
+        .nav-card h4 { font-size: 0.875rem; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; }
+        .nav-links { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; }
+        .nav-link { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; transition: 0.2s; display: flex; align-items: center; gap: 0.5rem; }
+        .nav-link:hover { color: var(--text); transform: translateX(4px); }
 
         /* --- Main Content --- */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 8rem 2rem 4rem;
-        }
+        .container { max-width: 1000px; margin: 0 auto; padding: 10rem 2rem 4rem; }
 
-        header {
-            text-align: center;
-            margin-bottom: 6rem;
-        }
+        .hero { text-align: center; margin-bottom: 6rem; }
+        h1 { font-size: 4rem; font-weight: 800; letter-spacing: -3px; line-height: 1.1; margin-bottom: 1.5rem; }
+        .hero p { font-size: 1.25rem; color: var(--text-muted); max-width: 600px; margin: 0 auto; }
 
-        h1 {
-            font-size: 5rem;
-            font-weight: 800;
-            letter-spacing: -3px;
-            line-height: 1;
-            margin-bottom: 1.5rem;
-        }
+        /* --- Focused Showcase Cards --- */
+        .showcase { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 4rem; }
 
-        .hero-text {
-            color: var(--text-muted);
-            font-size: 1.5rem;
-            max-width: 700px;
-            margin: 0 auto;
-        }
-
-        /* --- Health Check Box --- */
-        .health-monitor {
+        .card {
             background: var(--surface);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 2rem;
-            padding: 3rem;
-            max-width: 600px;
-            margin: 0 auto;
-            text-align: center;
+            border: 1px solid var(--border);
+            border-radius: 1.5rem;
+            padding: 2.5rem;
             position: relative;
-            overflow: hidden;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
 
-        .health-monitor::before {
-            content: "";
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle at center, var(--primary) 0%, transparent 40%);
-            opacity: 0.05;
-            z-index: 0;
-        }
+        .card h2 { font-size: 1.5rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.75rem; }
 
-        .health-header {
-            position: relative;
-            z-index: 1;
-        }
+        /* Health Box */
+        .health-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem; }
+        .health-item { background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 1rem; text-align: center; border: 1px solid var(--border); }
+        .health-val { font-size: 1.25rem; font-weight: 800; color: var(--success); }
+        .health-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; }
 
-        .health-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.75rem;
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--success);
-            padding: 0.75rem 1.5rem;
-            border-radius: 99px;
-            font-weight: 700;
-            font-size: 1.125rem;
-            margin-bottom: 2rem;
-            border: 1px solid rgba(16, 185, 129, 0.2);
-        }
-
-        .status-pulse {
-            width: 12px;
-            height: 12px;
-            background: var(--success);
-            border-radius: 50%;
-            box-shadow: 0 0 15px var(--success);
-            animation: pulse-health 2s infinite;
-        }
-
-        @keyframes pulse-health {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.5); opacity: 0.5; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        .health-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-            position: relative;
-            z-index: 1;
-        }
-
-        .detail-card {
-            background: rgba(255, 255, 255, 0.03);
-            padding: 1.5rem;
-            border-radius: 1.25rem;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .detail-label {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--text-muted);
-            margin-bottom: 0.5rem;
-        }
-
-        .detail-value {
-            font-size: 1.25rem;
-            font-weight: 700;
-        }
-
-        .health-btn {
-            margin-top: 2rem;
-            width: 100%;
-            padding: 1rem;
-            background: linear-gradient(to right, var(--primary), var(--secondary));
-            color: white;
-            border: none;
+        /* API Example */
+        .code-box {
+            background: #000;
+            padding: 1.25rem;
             border-radius: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: 0.3s;
-            position: relative;
-            z-index: 1;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #d4d4d8;
+            border: 1px solid var(--border);
+            margin-top: 1rem;
         }
-
-        .health-btn:hover {
-            transform: scale(1.02);
-            filter: brightness(1.1);
-        }
-
-        footer {
-            text-align: center;
-            padding: 4rem;
-            color: var(--text-muted);
-            font-size: 0.875rem;
-        }
+        .token { color: var(--primary); }
 
         @media (max-width: 768px) {
-            h1 { font-size: 3rem; }
-            .health-details { grid-template-columns: 1fr; }
-            .card-nav.open { height: 500px; }
+            h1 { font-size: 2.5rem; }
+            .showcase { grid-template-columns: 1fr; }
             .card-nav-content { flex-direction: column; height: auto; }
+            .card-nav.open { height: auto !important; }
         }
     </style>
 </head>
 <body>
     <div class="gradient-bg"></div>
     
-    <!-- CardNav Component -->
     <div class="card-nav-container">
         <nav class="card-nav" id="nav">
             <div class="card-nav-top">
-                <div class="hamburger-menu" id="menu-toggle">
-                    <div class="hamburger-line"></div>
-                    <div class="hamburger-line"></div>
-                    <div class="hamburger-line"></div>
+                <div class="hamburger" id="hamburger">
+                    <span></span>
+                    <span></span>
+                    <span></span>
                 </div>
-                <div class="nav-logo">DEVFLOW</div>
-                <button class="nav-cta">API Access</button>
+                <div class="logo">DEVFLOW</div>
+                <div style="font-size: 0.75rem; color: var(--success); font-weight: 700; display: flex; align-items: center; gap: 5px;">
+                    <div style="width: 8px; height: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 10px var(--success);"></div>
+                    LIVE
+                </div>
             </div>
             
-            <div class="card-nav-content">
+            <div class="card-nav-content" id="nav-content">
                 <div class="nav-card">
-                    <div class="nav-card-label">Features</div>
-                    <div class="nav-card-links">
-                        <a href="#" class="nav-card-link"><span>✨</span> AI Task Analysis</a>
-                        <a href="#" class="nav-card-link"><span>⚡</span> Real-time Sync</a>
-                        <a href="#" class="nav-card-link"><span>🛡️</span> Security Mesh</a>
+                    <h4>Tech Stack</h4>
+                    <div class="nav-links">
+                        <a href="#" class="nav-link">Node.js / Express</a>
+                        <a href="#" class="nav-link">MongoDB / Redis</a>
+                        <a href="#" class="nav-link">Gemini AI API</a>
                     </div>
                 </div>
                 <div class="nav-card">
-                    <div class="nav-card-label">Endpoints</div>
-                    <div class="nav-card-links">
-                        <a href="/api/auth/login" class="nav-card-link">🔐 Auth API</a>
-                        <a href="/api/tasks" class="nav-card-link">📋 Tasks API</a>
-                        <a href="/api/ai/analyze" class="nav-card-link">🤖 AI Engine</a>
-                    </div>
-                </div>
-                <div class="nav-card">
-                    <div class="nav-card-label">Resources</div>
-                    <div class="nav-card-links">
-                        <a href="https://github.com/shreyash-jain27/DEVFLOW" class="nav-card-link">🐙 GitHub Repo</a>
-                        <a href="/admin/queues" class="nav-card-link">📊 Queue Board</a>
-                        <a href="/api/health" class="nav-card-link">🩺 System API</a>
+                    <h4>Dev Tools</h4>
+                    <div class="nav-links">
+                        <a href="/admin/queues" class="nav-link">BullMQ Dashboard</a>
+                        <a href="/api/health" class="nav-link">Health API</a>
+                        <a href="https://github.com/shreyash-jain27/DEVFLOW" class="nav-link">GitHub Source</a>
                     </div>
                 </div>
             </div>
@@ -374,99 +207,92 @@
     </div>
 
     <div class="container">
-        <header>
-            <h1>Future-Proof<br>Task Engine</h1>
-            <p class="hero-text">
-                The world's most advanced AI-enhanced task management backbone.
-            </p>
-        </header>
-
-        <!-- Health Check Box -->
-        <div class="health-monitor">
-            <div class="health-header">
-                <div class="health-status">
-                    <div class="status-pulse"></div>
-                    SYSTEM OPERATIONAL
-                </div>
-                <h2 style="font-size: 2rem; margin-bottom: 2rem;">Real-time Health</h2>
-            </div>
-            
-            <div class="health-details">
-                <div class="detail-card">
-                    <div class="detail-label">Latency</div>
-                    <div class="detail-value" id="latency">24ms</div>
-                </div>
-                <div class="detail-card">
-                    <div class="detail-label">Uptime</div>
-                    <div class="detail-value" id="uptime">99.98%</div>
-                </div>
-                <div class="detail-card">
-                    <div class="detail-label">AI Engine</div>
-                    <div class="detail-value">Online</div>
-                </div>
-                <div class="detail-card">
-                    <div class="detail-label">Database</div>
-                    <div class="detail-value">Connected</div>
-                </div>
-            </div>
-
-            <button class="health-btn" onclick="checkHealth()">Verify System Integrity</button>
+        <div class="hero">
+            <h1>Backend Engine<br>for AI Workflows</h1>
+            <p>A high-performance system featuring automated task analysis, real-time sync, and enterprise security.</p>
         </div>
 
-        <footer>
-            &copy; 2026 DevFlow Engine. Enterprise Ready.
-        </footer>
+        <div class="showcase">
+            <!-- Health Showcase -->
+            <div class="card">
+                <h2><span>🩺</span> System Health</h2>
+                <div class="health-grid">
+                    <div class="health-item">
+                        <div class="health-val" id="lat">24ms</div>
+                        <div class="health-label">Latency</div>
+                    </div>
+                    <div class="health-item">
+                        <div class="health-val">99.9%</div>
+                        <div class="health-label">Uptime</div>
+                    </div>
+                    <div class="health-item">
+                        <div class="health-val">Active</div>
+                        <div class="health-label">AI Engine</div>
+                    </div>
+                    <div class="health-item">
+                        <div class="health-val">Online</div>
+                        <div class="health-label">Redis</div>
+                    </div>
+                </div>
+                <button onclick="ping()" style="width: 100%; margin-top: 1.5rem; padding: 0.75rem; border-radius: 0.75rem; border: none; background: var(--primary); color: white; font-weight: 700; cursor: pointer;">Ping System</button>
+            </div>
+
+            <!-- API Showcase -->
+            <div class="card">
+                <h2><span>🤖</span> AI Task Analysis</h2>
+                <p style="font-size: 0.875rem; color: var(--text-muted);">Sample AI-powered task decomposition:</p>
+                <div class="code-box">
+                    <span class="token">POST</span> /api/ai/analyze<br>
+                    {<br>
+                    &nbsp;&nbsp;"title": "Setup Server",<br>
+                    &nbsp;&nbsp;"priority": <span style="color:var(--success)">"HIGH"</span>,<br>
+                    &nbsp;&nbsp;"subtasks": ["Config SSL", "DB Init"]<br>
+                    }
+                </div>
+                <p style="margin-top: 1rem; font-size: 0.75rem; color: var(--text-muted);">
+                    Integrates Gemini API for intelligent prioritization.
+                </p>
+            </div>
+        </div>
     </div>
 
     <script>
-        // CardNav Logic
         const nav = document.getElementById('nav');
-        const menuToggle = document.getElementById('menu-toggle');
+        const hamburger = document.getElementById('hamburger');
+        const content = document.getElementById('nav-content');
         let isOpen = false;
 
-        menuToggle.addEventListener('click', () => {
+        hamburger.addEventListener('click', () => {
             isOpen = !isOpen;
-            nav.classList.toggle('open', isOpen);
+            hamburger.classList.toggle('open');
             
             if (isOpen) {
-                gsap.from('.nav-card', {
-                    y: 20,
-                    opacity: 0,
-                    stagger: 0.1,
-                    duration: 0.4,
-                    ease: "power3.out"
-                });
+                // Open
+                gsap.to(nav, { height: window.innerWidth > 768 ? 320 : 'auto', duration: 0.5, ease: "power4.out" });
+                gsap.set(content, { visibility: 'visible' });
+                gsap.to(content, { opacity: 1, duration: 0.3, delay: 0.2 });
+                gsap.from('.nav-card', { y: 20, opacity: 0, stagger: 0.1, duration: 0.4, delay: 0.2 });
+            } else {
+                // Close
+                gsap.to(content, { opacity: 0, duration: 0.2 });
+                gsap.to(nav, { height: 60, duration: 0.4, ease: "power4.inOut", onComplete: () => {
+                    gsap.set(content, { visibility: 'hidden' });
+                }});
             }
         });
 
-        // Health Check Logic
-        async function checkHealth() {
-            const btn = document.querySelector('.health-btn');
-            btn.textContent = 'Verifying...';
-            
-            try {
-                const start = Date.now();
-                const response = await fetch('/api/health');
-                const end = Date.now();
-                
-                if (response.ok) {
-                    document.getElementById('latency').textContent = `${end - start}ms`;
-                    btn.textContent = 'Verification Complete ✅';
-                    setTimeout(() => btn.textContent = 'Verify System Integrity', 2000);
-                } else {
-                    btn.textContent = 'System Alert ⚠️';
-                }
-            } catch (err) {
-                btn.textContent = 'Connection Error ❌';
-            }
+        async function ping() {
+            const start = Date.now();
+            await fetch('/api/health');
+            const end = Date.now();
+            document.getElementById('lat').textContent = `${end - start}ms`;
         }
 
-        // Randomize latency a bit for "live" feel
+        // Sim live latency
         setInterval(() => {
-            const base = 20;
-            const variation = Math.floor(Math.random() * 10);
-            document.getElementById('latency').textContent = `${base + variation}ms`;
-        }, 5000);
+            const val = 20 + Math.floor(Math.random() * 10);
+            document.getElementById('lat').textContent = `${val}ms`;
+        }, 4000);
     </script>
 </body>
 </html>
